@@ -1,19 +1,17 @@
 interface ToolType {
-  type: 'function';
+  type: 'function'
   function: {
-    name: string;
-    description: string;
+    name: string
+    description: string
     parameters?: {
-      type: 'object';
-      properties: {
-        [key: string]: {
-          type: 'string' | 'number' | 'boolean';
-          description: string;
-        };
-      };
-      required?: string[];
-    };
-  };
+      type: 'object'
+      properties: Record<string, {
+        type: 'string' | 'number' | 'boolean'
+        description: string
+      }>
+      required?: string[]
+    }
+  }
 }
 
 /*
@@ -84,6 +82,13 @@ export const AItools: ToolType[] = [
         },
         required: ['url'],
       },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'getScreenshot',
+      description: 'Ta a screenshot of what the user is seeing and return it',
     },
   },
   {

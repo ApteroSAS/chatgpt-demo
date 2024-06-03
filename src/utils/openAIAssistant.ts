@@ -1,7 +1,8 @@
-
+import fs from 'fs'
+import { writeFile } from 'fs/promises'
 import OpenAI from 'openai'
-import type { ChatMessage } from '@/types'
 import { AItools } from './assistantTools'
+import type { ChatMessage } from '@/types'
 
 const defModel = import.meta.env.OPENAI_API_MODEL || 'gpt-3.5-turbo'
 const apiKey = import.meta.env.OPENAI_API_KEY
@@ -22,6 +23,7 @@ const contexts = new Map<string, ThreadContext>()
 const assistantMap = new Map<string, OpenAI.Beta.Assistants.Assistant[]>()// key is roomID
 
 export function cleanupAssistants() {
+  // TODO cleanup temp file on server and on tmp folder
   (async() => {
     try {
       // cleanup old assistants delete assistant of more that a day old
@@ -91,6 +93,19 @@ export const processOpenAI = async(
   try {
     const assistant = await openai.beta.assistants.retrieve(assistantId)
     const threadId: string = (assistant.metadata as any).threadId
+    const runs = await openai.beta.threads.runs.list(
+      threadId,
+    )
+    for (const run of runs.data) {
+      // cancel any run in progress
+      if (run.status === 'queued' || run.status === 'in_progress' || run.status === 'requires_action') {
+        console.warn('Cancelling run reason:', run.status, run.id)
+        await openai.beta.threads.runs.cancel(
+          threadId,
+          run.id,
+        )
+      }
+    }
     if (contexts.has(assistant.id)) {
       try {
         const context = contexts.get(assistant.id)
@@ -241,14 +256,60 @@ export async function notifyRoomAction(roomId: string, description: string, reac
 
 async function submitToolOutputs(toolOutputs: { tool_call_id: string, output: string }[], context: ThreadContext) {
   try {
+    const imgs = []
+    for (const toolOutput of toolOutputs) {
+      if (toolOutput.output.startsWith('data:image')) {
+        // Extract base64 data
+        const base64Data = toolOutput.output.split(',')[1]
+        const filePath = `./tmp/image-${Date.now()}.png`
+
+        // Write base64 data to a file
+        await writeFile(filePath, base64Data, { encoding: 'base64' })
+
+        // Upload the file
+        const file = await openai.files.create({
+          file: fs.createReadStream(filePath),
+          purpose: 'vision' as any,
+        })
+
+        // Store the URL or file id returned by OpenAI for later use
+        imgs.push(file.id)
+
+        // Update the output message
+        toolOutput.output = 'image captured'
+      }
+    }
+
+    console.log(toolOutputs)
+
     // Use the submitToolOutputsStream helper
     const stream = openai.beta.threads.runs.submitToolOutputsStream(
       context.threadId,
       context.runId,
       { tool_outputs: toolOutputs },
     )
+
     for await (const event of stream) {
       await processEvent(event, context)
+    }
+
+    for (const img of imgs) {
+      console.log('submitting image', img)
+      await openai.beta.threads.messages.create(
+        context.threadId,
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Uploaded image' },
+            {
+              type: 'image_file',
+              image_file: {
+                file_id: img,
+              },
+            },
+          ],
+        },
+      )
     }
   } catch (error) {
     console.error('Error submitting tool outputs:', error)

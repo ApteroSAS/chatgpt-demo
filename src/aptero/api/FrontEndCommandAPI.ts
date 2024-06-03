@@ -77,6 +77,8 @@ export class FrontEndCommandAPI {
             reclick: argumentsData.actionReclick,
             repeat: argumentsData.actionRepeat,
           })
+        case 'getScreenshot':
+          return this.getScreenshot()
       }
     }
   }
@@ -137,5 +139,9 @@ export class FrontEndCommandAPI {
      * **/
   async triggerAnimation(animName: string, action: TriggerAnimationAction) {
     return this.sendCommandToParent('triggerAnimation', { animName, action })
+  }
+
+  private getScreenshot() {
+    return this.sendCommandToParent('getScreenshot', { })
   }
 }
