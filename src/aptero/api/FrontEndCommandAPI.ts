@@ -16,13 +16,13 @@ export class FrontEndCommandAPI {
     const requestId = this.generateRequestId()
     return new Promise((resolve, reject) => {
       this.requestMap.set(requestId, { resolve, reject })
-      // timeout after 30s
+      // timeout after 10s
       setTimeout(() => {
         if (this.requestMap.has(requestId)) {
           this.requestMap.delete(requestId)
         }
-        reject(new Error('timeout 30s'))
-      }, 30000)
+        reject(new Error('timeout 10s'))
+      }, 10000)
       window.parent.postMessage({ id: requestId, command, data }, '*')
     })
   }

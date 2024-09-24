@@ -13,6 +13,10 @@ remove the thinking process from the assistant effectively,
 implement the cleanupClaudeAssistants function,
 and implement Timeouts in case we don't get a response from Claude.
 
+So the Tool system is not implemented yet
+we may need to remake how we handle messages with
+the Generator.tsx file
+
 !!!!!!!!!!!!!!!!!!!!
 */
 
@@ -35,6 +39,8 @@ const defModel = 'claude-3-sonnet-20240229'
 const claudeApiKey = import.meta.env.ANTHROPIC_API_KEY
 const claudeBaseUrl = ((import.meta.env.ANTHROPIC_API_BASE_URL) || 'https://api.anthropic.com').trim().replace(/\/$/, '')
 const httpsProxy = import.meta.env.HTTPS_PROXY
+
+console.log("claudeApiKey", claudeApiKey)
 
 // Update headers as needed
 const headerObject = {
@@ -64,14 +70,14 @@ export async function createClaude(
   threadId: string,
   model: string,
   prompt?: string,
-  useTool: boolean = true
+  useTool: boolean = false
 ): Promise<{ id: string }> {
   cleanupClaudeAssistants();
   if (!prompt) prompt = 'You are a personal assistant'
 
-  useTool = true; // Always use tools for Claude
+  useTool = false; // Always disable tools for Claude
 
-  console.log("useTool", useTool)
+  //console.log("useTool", useTool)
 
   const payload = {
     model,
@@ -107,7 +113,7 @@ export const processClaude = async (
   messages: ChatMessage[],
   model = defModel,
   system = '',
-  useTool = true,
+  useTool = false,
 ) => {
   const payload = {
     model,
@@ -199,10 +205,13 @@ export const parseClaudeStream = (rawResponse: Response) => {
 
                     console.log(`Executing Tool: ${tool}`);
 
-                    // Execute the tool using the API
+                    // Execute the tool
+                    /*const toolOutput = await executeTool(tool, toolParams);
                     
-                    // To Do
-                    
+                    // Notify the tool execution result
+                    const payload = { toolCallId, output: toolOutput };
+                    await fetch('./api/notifyCall', { method: 'POST', body: JSON.stringify(payload) });
+                    */
                     toolExecution = true;
                   }
 

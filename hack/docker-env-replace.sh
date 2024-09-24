@@ -2,6 +2,10 @@
 
 # Your API Key for OpenAI
 openai_api_key=$OPENAI_API_KEY
+# Anthropic API Key
+anthropic_api_key=$ANTHROPIC_API_KEY
+# Sendgrid API Key
+sendgrid_api_key=$SENDGRID_API_KEY
 # Provide proxy for OpenAI API. e.g. http://127.0.0.1:7890
 https_proxy=$HTTPS_PROXY
 # Custom base url for OpenAI API. default: https://api.openai.com
@@ -17,6 +21,8 @@ openai_api_model=$OPENAI_API_MODEL
 
 for file in $(find ./dist -type f -name "*.mjs"); do
   sed "s/({}).OPENAI_API_KEY/\"$openai_api_key\"/g;
+  s/({}).ANTHROPIC_API_KEY/\"$anthropic_api_key\"/g;
+  s/({}).SENDGRID_API_KEY/\"$sendgrid_api_key\"/g;
   s/({}).HTTPS_PROXY/\"$https_proxy\"/g;
   s/({}).OPENAI_API_BASE_URL/\"$openai_api_base_url\"/g;
   s/({}).HEAD_SCRIPTS/\"$head_scripts\"/g;

@@ -26,6 +26,7 @@ export default () => {
   const [controller, setController] = createSignal<AbortController>(null)
   const [isStick, setStick] = createSignal(false)
   const [popupVisible, setPopupVisible] = createSignal(false)
+  const [reportText, setReportText] = createSignal('') // Signal to store report text
   const [threadId, setThreadId] = createSignal<string | null>(null)
 
   // We add a Default MODEL that can be changed using a Query string!
@@ -318,7 +319,68 @@ export default () => {
 
   const hidePopup = () => {
     setPopupVisible(false)
+    setReportText('') // Clear the report text when popup is closed
   }
+
+  const reportListPrerocess = () => {
+    return messageList().map((message) => {
+      let rolePrefix = '';
+      
+      switch (message.role) {
+        case 'system':
+          rolePrefix = 'System: ';
+          break;
+        case 'assistant':
+          rolePrefix = 'Assistant: ';
+          break;
+        case 'user':
+          rolePrefix = 'User: ';
+          break;
+        default:
+          rolePrefix = '';
+      }
+      
+      return `${rolePrefix}${message.content}`;
+    }).join('\n');
+  };  
+
+  const handleReportSubmit = () => {
+    if (reportText().trim()) {
+      // Preprocess the message list before sending it in the report
+      const preprocessedMessages = reportListPrerocess();
+  
+      const reportData = {
+        userMessage: reportText(),
+        chatLog: preprocessedMessages, // Use the preprocessed messages here
+        currentModel: currentModel(),
+        systemPrompt: currentSystemRoleSettings()
+      };
+  
+      fetch('./api/sendReport', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reportData),
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Report submitted successfully.');
+          hidePopup();
+        } else {
+          alert('Failed to send the report. Please try again later.');
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to send the report:', error);
+        alert('Failed to send the report. Please try again later.');
+      });
+    } else {
+      alert('Please write a report before submitting.');
+    }
+  };
+  
 
   const copyAll = () => { // Copy all the messages to the clipboard (including the currentSystemRoleSettings at the beggining) and sepparated by a comma
     let reportText = `{"role":"system","content":${JSON.stringify(currentSystemRoleSettings())}},`
@@ -329,10 +391,6 @@ export default () => {
     })
     reportText = `[${reportText}]`
     navigator.clipboard.writeText(reportText)
-  }
-
-  const openReport = () => { // Open the page only
-    window.open('https://openai.com/form/chat-model-feedback/', '_blank')
   }
 
   return (
@@ -348,12 +406,23 @@ export default () => {
       */}
       {popupVisible() && (
         <div class="report-popup">
-          <p class="content">You will be redirected to the OpenAi website</p>
+          <p class="content">Please write your report below:</p>
+          <textarea
+            class="content"
+            value={reportText()}
+            onInput={(e) => setReportText((e.target as HTMLTextAreaElement).value)}
+            rows="5"
+            placeholder="Write your report here..."
+            style="width: 100%; margin-bottom: 1em;"
+          />
           <div class="content">
-            <button class="content" gen-slate-btn style="margin: 0 1em" onClick={copyAll}>Copy Chat</button>
-            <button class="content" gen-slate-btn style="margin: 0 1em" onClick={openReport}>Open Form</button>
+            <button class="content" gen-slate-btn style="margin: 0 1em" onClick={handleReportSubmit}>
+              Submit Report
+            </button>
+            <button class="content" gen-slate-btn style="margin: 0 1em" onClick={hidePopup}>
+              Cancel
+            </button>
           </div>
-          <button class="content" onClick={hidePopup}>Close</button>
         </div>
       )}
       <Index each={messageList()}>
@@ -413,7 +482,12 @@ export default () => {
               <button title="Clear" onClick={clear} disabled={systemRoleEditing()} gen-slate-btn>
                 <IconClear />
               </button>
-              <button title="Report" onClick={report} disabled={systemRoleEditing()} gen-slate-btn>
+              <button 
+                title="Report" 
+                onClick={() => setPopupVisible(!popupVisible())}
+                disabled={systemRoleEditing()}
+                gen-slate-btn
+              >
                 <IconReport />
               </button>
               <div

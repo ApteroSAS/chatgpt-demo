@@ -27,9 +27,9 @@
 
 .report-popup {
   background-color: var(--c-bg);
-  width: 400px;
-  height: 200px;
-  position: absolute;
+  position: fixed;
+  width: 100%;
+  max-width: 500px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -60,4 +60,8 @@
 .report-popup .content {
   position: relative;
   z-index: 1;
+}
+.report-popup textarea {
+  color:black;
+  padding: 0.1em 0.3em;
 }

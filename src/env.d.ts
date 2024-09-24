@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly OPENAI_API_KEY: string
+  readonly ANTHROPIC_API_KEY: string
+  readonly SENDGRID_API_KEY: string
   readonly HTTPS_PROXY: string
   readonly OPENAI_API_BASE_URL: string
   readonly HEAD_SCRIPTS: string
