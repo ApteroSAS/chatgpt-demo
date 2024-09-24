@@ -115,6 +115,13 @@ export const processClaude = async (
   system = '',
   useTool = false,
 ) => {
+
+  // Ensure that the FIRST message is always 'user' type, remove anything before that
+  const firstUserMessageIndex = messages.findIndex((msg) => msg.role === 'user')
+  if (firstUserMessageIndex > 0) {
+    messages = messages.slice(firstUserMessageIndex)
+  }
+
   const payload = {
     model,
     messages,
